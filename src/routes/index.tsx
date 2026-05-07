@@ -55,9 +55,9 @@ function QueueDisplayPage() {
     return () => clearInterval(id);
   }, []);
 
-  // Auto-refresh dữ liệu hàng chờ mỗi 30 giây
+  // Auto-refresh dữ liệu hàng chờ mỗi 15 giây
   useEffect(() => {
-    const id = setInterval(() => window.location.reload(), 30000);
+    const id = setInterval(() => window.location.reload(), 15000);
     return () => clearInterval(id);
   }, []);
 

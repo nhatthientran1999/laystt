@@ -28,9 +28,16 @@ function QuayPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Trigger cleanup SKIPPED → CANCELED mỗi khi load trang
   useEffect(() => {
     runGracePeriodCleanup({ data: undefined }).catch(console.error);
+  }, []);
+
+  // Tự động làm mới dữ liệu mỗi 15 giây
+  useEffect(() => {
+    const timer = setInterval(() => {
+      window.location.reload();
+    }, 15000);
+    return () => clearInterval(timer);
   }, []);
 
   // Người đang IN_PROGRESS (serving)
@@ -130,7 +137,7 @@ function QuayPage() {
     <div className="flex min-h-screen lg:h-screen overflow-x-hidden lg:overflow-hidden bg-secondary/40 font-sans">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 overflow-x-hidden pb-10">
-        <TopBar />
+        <TopBar activeTab={activeTab} setActiveTab={setActiveTab} />
         <div className="space-y-4 md:space-y-6 p-3 md:p-6">
           {activeTab === "dashboard" ? (
             <>
@@ -183,13 +190,35 @@ function Sidebar({ activeTab, setActiveTab }: any) {
   );
 }
 
-function TopBar() {
+function TopBar({ activeTab, setActiveTab }: any) {
   return (
     <div className="bg-white flex h-16 md:h-20 items-center gap-2 md:gap-4 border-b border-slate-100 px-4 md:px-8 shrink-0">
-      <div className="flex items-center gap-2 md:gap-3 rounded-xl md:rounded-2xl border border-slate-100 bg-slate-50 px-3 md:px-5 py-1.5 md:py-2.5 text-[9px] md:text-xs font-black uppercase tracking-widest text-slate-500 shadow-inner">
-        <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-        <span className="hidden xs:inline">Đang trực:</span> <span className="text-slate-900 ml-0.5 md:ml-1">Quầy 01</span>
+      {/* Mobile Tab Switcher */}
+      <div className="flex md:hidden bg-slate-100 p-1 rounded-xl">
+        <button
+          onClick={() => setActiveTab("dashboard")}
+          className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+            activeTab === "dashboard" ? "bg-white text-primary shadow-sm" : "text-slate-400"
+          }`}
+        >
+          Điều khiển
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+            activeTab === "history" ? "bg-white text-primary shadow-sm" : "text-slate-400"
+          }`}
+        >
+          Lịch sử
+        </button>
       </div>
+
+      {/* Desktop Indicator */}
+      <div className="hidden md:flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-slate-500 shadow-inner">
+        <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+        Đang trực: <span className="text-slate-900 ml-1">Quầy 01</span>
+      </div>
+
       <div className="ml-auto flex items-center gap-3 md:gap-6">
         <div className="flex items-center gap-2 md:gap-3">
           <div className="text-right hidden sm:block">
