@@ -1,11 +1,12 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useLoaderData, useNavigate } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import {
   Bell, ChevronDown, ChevronLeft, ChevronRight, Clock, Headphones,
   History, Home, LogOut, Menu, Phone, RotateCw, Search, Settings, SkipForward, User, UserCircle2, Users,
 } from "lucide-react";
 import { Logo } from "@/components/qms/Logo";
 import { Input } from "@/components/ui/input";
+import { getQueue, callNextTicket, skipTicket } from "@/lib/server-functions";
 
 export const Route = createFileRoute("/quay")({
   head: () => ({
@@ -14,54 +15,70 @@ export const Route = createFileRoute("/quay")({
       { name: "description", content: "Bảng điều khiển quầy phục vụ cho nhân viên." },
     ],
   }),
+  loader: () => getQueue(),
   component: QuayPage,
 });
 
-const initialQueue = [
-  { num: "102", name: "Nguyễn Thị Lan", phone: "0905123456", time: "09:15:24", service: "Thủ tục cấp Căn cước" },
-  { num: "103", name: "Lê Văn Hùng", phone: "0912456789", time: "09:16:02", service: "Thủ tục cấp định danh điện tử mức độ 2" },
-  { num: "104", name: "Phạm Minh Tuấn", phone: "0938789012", time: "09:17:11", service: "Thủ tục cấp Căn cước" },
-  { num: "105", name: "Trần Thị Mai", phone: "0707321654", time: "09:17:45", service: "Thủ tục cấp định danh điện tử mức độ 2" },
-  { num: "106", name: "Hoàng Quốc Bảo", phone: "0789654321", time: "09:18:30", service: "Thủ tục cấp Căn cước" },
-];
-
 function QuayPage() {
-  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, history
-  const [current, setCurrent] = useState<any>({ num: "101", name: "Trần Văn An", phone: "0909000111", service: "Thủ tục cấp Căn cước" });
-  const [queue, setQueue] = useState(initialQueue);
-  const [history, setHistory] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const initialData = useLoaderData({ from: "/quay" }) as any[];
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [search, setSearch] = useState("");
+  const [history, setHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const callNext = () => {
-    if (queue.length === 0) return;
-    const next = queue[0];
-    
-    // Add current to history as served before moving to next
-    if (current) {
-      setHistory([{ ...current, status: "served", completedAt: new Date().toLocaleTimeString() }, ...history]);
+  // Tách dữ liệu: người đang phục vụ và người đang chờ
+  const servingItem = initialData.find(i => i.status === 'serving');
+  const waitingItems = initialData.filter(i => i.status === 'waiting');
+
+  const callNext = async () => {
+    setLoading(true);
+    try {
+      await callNextTicket({ data: { counterId: 1 } });
+      navigate({ to: "/quay", replace: true }); // Reload loader
+    } catch (err) {
+      alert("Lỗi khi gọi số: " + (err as Error).message);
+    } finally {
+      setLoading(false);
     }
-
-    setCurrent(next);
-    setQueue(queue.slice(1));
   };
 
-  const skipCurrent = () => {
-    if (!current) return;
-    setHistory([{ ...current, status: "skipped", completedAt: new Date().toLocaleTimeString() }, ...history]);
-    
-    if (queue.length > 0) {
-      setCurrent(queue[0]);
-      setQueue(queue.slice(1));
-    } else {
-      setCurrent(null);
+  const skipCurrent = async () => {
+    if (!servingItem) return;
+    setLoading(true);
+    try {
+      await skipTicket({ data: { ticketId: servingItem.id } });
+      // Sau khi bỏ qua, tự động gọi số tiếp theo
+      await callNextTicket({ data: { counterId: 1 } });
+      navigate({ to: "/quay", replace: true });
+    } catch (err) {
+      alert("Lỗi khi bỏ qua: " + (err as Error).message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const recallTicket = (ticket: any) => {
-    // If recalling from history, we can either set as current or add back to queue
-    // For this UI, let's just set it as the current active serving
-    setCurrent({ ...ticket });
+    // Demo tính năng gọi lại
+    alert(`Đang gọi lại số ${ticket.display_number}...`);
   };
+
+  const queue = waitingItems.map(item => ({
+    id: item.id,
+    num: item.display_number,
+    name: item.customer_name,
+    phone: item.phone_number,
+    time: new Date(item.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    service: item.service_type
+  }));
+
+  const current = servingItem ? {
+    id: servingItem.id,
+    num: servingItem.display_number,
+    name: servingItem.customer_name,
+    phone: servingItem.phone_number,
+    service: servingItem.service_type
+  } : null;
 
   const filteredQueue = queue.filter(
     (q) => q.num.includes(search) || q.name.toLowerCase().includes(search.toLowerCase()) || q.phone.includes(search),
@@ -184,6 +201,7 @@ function ServingCard({ current, onNext, onSkip }: { current: any; onNext: () => 
           label="GỌI SỐ TIẾP THEO"
           sub="Tự động gọi số ưu tiên"
           icon={<ChevronRight className="h-8 w-8" />}
+          disabled={false}
         />
       </div>
 
@@ -210,13 +228,14 @@ function ServingCard({ current, onNext, onSkip }: { current: any; onNext: () => 
 }
 
 function ActionButton({
-  onClick, className, label, sub, icon,
-}: { onClick?: () => void; className: string; label: string; sub: string; icon: React.ReactNode }) {
+  onClick, className, label, sub, icon, disabled = false
+}: { onClick?: () => void; className: string; label: string; sub: string; icon: React.ReactNode; disabled?: boolean }) {
   return (
     <div className="flex flex-col items-center text-center">
       <button
         onClick={onClick}
-        className={`shadow-soft group h-32 w-32 md:h-40 md:w-40 grid place-items-center rounded-[2rem] text-sm md:text-base font-black transition-all hover:-translate-y-1 active:scale-95 ${className}`}
+        disabled={disabled}
+        className={`shadow-soft group h-32 w-32 md:h-40 md:w-40 grid place-items-center rounded-[2rem] text-sm md:text-base font-black transition-all hover:-translate-y-1 active:scale-95 ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
       >
         <div className="flex flex-col items-center gap-3">
           <div className="bg-white/20 p-3 rounded-2xl group-hover:scale-110 transition-transform">

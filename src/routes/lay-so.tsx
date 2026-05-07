@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/qms/Logo";
-import { createTicket } from "@/lib/server-functions";
+import { createTicket, getQueue } from "@/lib/server-functions";
 
 export const Route = createFileRoute("/lay-so")({
   head: () => ({
@@ -24,11 +24,39 @@ function LaySoPage() {
   const [service, setService] = useState("");
   const [loading, setLoading] = useState(false);
   const [ticketData, setTicketData] = useState<any>(null);
+  const [queueDataRaw, setQueueDataRaw] = useState<any[]>([]);
+  const [queuePos, setQueuePos] = useState(0);
 
   const services = [
     "Thủ tục cấp Căn cước",
     "Thủ tục cấp định danh điện tử mức độ 2"
   ];
+
+  const getEstimatedTime = () => {
+    if (!ticketData || !queueDataRaw) return "--:--";
+    
+    // Thuật toán tịnh tiến thông minh: Duyệt qua toàn bộ hàng chờ để tìm giờ dự kiến của số vừa lấy
+    let lastEst = new Date(0);
+    const targetId = ticketData.id;
+    let finalEst = new Date(ticketData.created_at);
+
+    const sortedQueue = [...queueDataRaw].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+
+    for (const item of sortedQueue) {
+      const createdAt = new Date(item.created_at);
+      const currentEst = new Date(Math.max(createdAt.getTime(), lastEst.getTime() + 15 * 60000));
+      lastEst = currentEst;
+      
+      if (item.id === targetId) {
+        finalEst = currentEst;
+        break;
+      }
+    }
+
+    return finalEst.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <div className="bg-gradient-hero min-h-screen overflow-x-hidden">
@@ -47,6 +75,13 @@ function LaySoPage() {
               try {
                 const res = await createTicket({ data: { name, phone, service } });
                 setTicketData(res);
+                
+                // Lấy danh sách hàng chờ hiện tại để tính toán
+                const queueData = await getQueue();
+                setQueueDataRaw(queueData);
+                const pos = queueData ? (queueData as any[]).filter(i => i.status === 'waiting').length : 0;
+                setQueuePos(pos);
+                
                 setSubmitted(true);
               } catch (err) {
                 alert("Lỗi khi lấy số: " + (err as Error).message);
@@ -116,7 +151,9 @@ function LaySoPage() {
             </Button>
           </form>
         ) : (
-          <div className="bg-card shadow-elegant rounded-3xl border border-border p-6 md:p-8">
+          <div className="bg-card shadow-elegant rounded-[2.5rem] border border-border p-8 text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-primary"></div>
+            
             <div className="flex items-center gap-3 border-b border-border pb-4 md:pb-5">
               <Logo size={28} subtitle="Smart Queue" className="md:w-[32px]" />
               <span className="ml-auto text-[10px] font-semibold uppercase tracking-wider text-success">
@@ -131,26 +168,27 @@ function LaySoPage() {
               <h2 className="mt-4 md:mt-5 text-lg md:text-xl font-bold">Lấy số thành công!</h2>
               <p className="mt-1 text-[10px] md:text-xs text-muted-foreground">Vui lòng chờ gọi số: <span className="font-bold text-primary">{name}</span></p>
 
-              <div className="mt-6 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                Dịch vụ: {service}
+              <div className="mt-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Số thứ tự của bạn
+                </div>
+                <div className="bg-gradient-primary mt-1 bg-clip-text text-5xl md:text-7xl font-extrabold tracking-tight text-transparent">
+                  {ticketData?.display_number || "---"}
+                </div>
+                <div className="mt-2 inline-flex items-center gap-1.5 text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                  <Clock className="h-3 w-3" /> {ticketData ? new Date(ticketData.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : "--:--"} — {ticketData ? new Date(ticketData.created_at).toLocaleDateString('vi-VN') : "--/--/----"}
+                </div>
               </div>
 
-              <div className="mt-2 text-[9px] md:text-[10px] font-semibold uppercase tracking-widest text-primary">
-                Số thứ tự của bạn
-              </div>
-              <div className="bg-gradient-primary mt-1 bg-clip-text text-5xl md:text-7xl font-extrabold tracking-tight text-transparent">
-                {ticketData?.display_number || "---"}
-              </div>
-              <div className="mt-2 inline-flex items-center gap-1.5 text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
-                <Clock className="h-3 w-3" /> {ticketData ? new Date(ticketData.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : "--:--"} — {ticketData ? new Date(ticketData.created_at).toLocaleDateString('vi-VN') : "--/--/----"}
-              </div>
-            </div>
-
-            <div className="mt-6 md:mt-8 grid gap-3">
-              <InfoRow icon={<Users className="h-4 w-4" />} label="Hàng chờ hiện tại" value="12 người" />
-              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 px-4 py-3 md:py-4 text-center">
-                <div className="text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ước tính chờ</div>
-                <div className="mt-0.5 md:mt-1 text-lg md:text-xl font-black text-primary">20 - 25 phút</div>
+              <div className="mt-10 grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Thời gian chờ dự kiến</div>
+                  <div className="text-xl font-black text-primary mt-1">{getEstimatedTime()}</div>
+                </div>
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Số người đang chờ</div>
+                  <div className="text-xl font-black text-slate-700 mt-1">{queuePos > 0 ? queuePos - 1 : 0} người</div>
+                </div>
               </div>
             </div>
 

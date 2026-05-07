@@ -30,6 +30,23 @@ export const createTicket = createServerFn({ method: "POST" })
   });
 
 /**
+ * Hàm tra cứu số thứ tự bằng SĐT
+ */
+export const findTicketByPhone = createServerFn({ method: "GET" })
+  .handler(async ({ data: phone }: { data: string }) => {
+    const { data, error } = await supabase
+      .from("queues")
+      .select("*")
+      .eq("phone_number", phone)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    return data;
+  });
+
+/**
  * Hàm gọi số tiếp theo
  */
 export const callNextTicket = createServerFn({ method: "POST" })

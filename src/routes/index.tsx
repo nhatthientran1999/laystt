@@ -1,9 +1,10 @@
 import { useNavigate, createFileRoute, Link, useLoaderData } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/qms/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowRight, Clock, Calendar, UserCheck, Users, ShieldCheck, Hourglass, Search, Key } from "lucide-react";
-import { getQueue } from "@/lib/server-functions";
+import { ArrowRight, Clock, Calendar, UserCheck, Users, ShieldCheck, Hourglass, Search, Key, X } from "lucide-react";
+import { getQueue, findTicketByPhone } from "@/lib/server-functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,13 +24,10 @@ const maskPhone = (p: string) => {
   return cleaned.slice(0, 4) + "****" + cleaned.slice(-3);
 };
 
-// Helper: Calculate Estimated Time (15 mins per person, sequential)
-const calculateEstimatedTime = (index: number) => {
-  const baseHour = 10;
-  const baseMinute = 0;
-  const totalMinutes = baseHour * 60 + baseMinute + index * 15;
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
+// Helper: Format time from Date
+const formatTime = (date: Date) => {
+  const h = date.getHours();
+  const m = date.getMinutes();
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 };
 
@@ -37,6 +35,10 @@ function QueueDisplayPage() {
   const navigate = useNavigate();
   const rawQueue = useLoaderData({ from: "/" }) as any[];
   const [now, setNow] = useState(new Date());
+  const [searchPhone, setSearchPhone] = useState("");
+  const [foundTicket, setFoundTicket] = useState<any>(null);
+  const [foundPos, setFoundPos] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleAdminAccess = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -56,15 +58,46 @@ function QueueDisplayPage() {
   const time = now.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const date = now.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 
-  const queue = (rawQueue || []).map((item, index) => ({
-    ...item,
-    name: item.customer_name,
-    num: item.display_number,
-    phone: item.phone_number,
-    service: item.service_type,
-    maskedPhone: maskPhone(item.phone_number),
-    estimatedTime: calculateEstimatedTime(index),
-  }));
+  const handleSearch = async () => {
+    if (!searchPhone) return;
+    setIsSearching(true);
+    try {
+      const ticket = await findTicketByPhone({ data: searchPhone });
+      if (ticket) {
+        setFoundTicket(ticket);
+        // Tính toán vị trí trong hàng chờ hiện tại
+        const queueData = await getQueue();
+        const waitingList = (queueData as any[]).filter(i => i.status === 'waiting');
+        const pos = waitingList.findIndex(i => i.id === ticket.id);
+        setFoundPos(pos !== -1 ? pos : 0);
+      } else {
+        alert("Không tìm thấy thông tin số thứ tự cho số điện thoại này.");
+      }
+    } catch (err) {
+      alert("Lỗi khi tra cứu: " + (err as Error).message);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Thuật toán tịnh tiến thông minh: Est[i] = max(CreatedAt[i], Est[i-1] + 15p)
+  let lastEst = new Date(0);
+  const queue = (rawQueue || []).map((item) => {
+    const createdAt = new Date(item.created_at);
+    // Thời gian dự kiến là max của (giờ lấy phiếu) và (giờ người trước + 15p)
+    const currentEst = new Date(Math.max(createdAt.getTime(), lastEst.getTime() + 15 * 60000));
+    lastEst = currentEst;
+
+    return {
+      ...item,
+      name: item.customer_name,
+      num: item.display_number,
+      phone: item.phone_number,
+      service: item.service_type,
+      maskedPhone: maskPhone(item.phone_number),
+      estimatedTime: formatTime(currentEst),
+    };
+  });
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-900 flex flex-col font-sans selection:bg-primary/20 overflow-x-hidden">
@@ -91,16 +124,25 @@ function QueueDisplayPage() {
           </div>
         </div>
 
-        {/* Center Search Form - Hidden on small mobile or redesigned */}
+        {/* Center Search Form */}
         <div className="w-full md:flex-1 md:max-w-lg md:mx-12">
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-primary transition-colors" />
-            <Input 
-              type="tel"
-              placeholder="Nhập số điện thoại kiểm tra..." 
-              className="pl-11 h-10 md:h-11 bg-slate-50 border-slate-200 rounded-xl focus:ring-primary focus:border-primary text-sm md:text-base shadow-inner w-full"
-            />
-          </div>
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
+              <Input 
+                value={searchPhone}
+                onChange={(e) => setSearchPhone(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                placeholder="Tra cứu số thứ tự bằng SĐT..." 
+                className="h-10 md:h-11 w-full rounded-xl border-slate-200 bg-white pl-11 pr-32 shadow-inner focus:ring-primary transition-all text-sm md:text-base"
+              />
+              <Button 
+                onClick={handleSearch}
+                disabled={isSearching || !searchPhone}
+                className="absolute right-1 top-1 bottom-1 px-4 rounded-lg bg-primary text-[10px] md:text-xs font-bold text-white"
+              >
+                {isSearching ? "..." : "TRA CỨU"}
+              </Button>
+            </div>
         </div>
 
         {/* Right Actions */}
@@ -110,7 +152,7 @@ function QueueDisplayPage() {
             <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{date}</div>
           </div>
           
-          <Button asChild className="rounded-xl h-11 px-6 text-sm font-black bg-gradient-primary shadow-soft">
+          <Button asChild className="rounded-xl h-11 px-6 text-sm font-black bg-gradient-primary shadow-soft text-white">
             <Link to="/lay-so">Lấy số ngay</Link>
           </Button>
 
@@ -123,8 +165,6 @@ function QueueDisplayPage() {
             <Key className="h-5 w-5" />
           </Button>
         </div>
-
-        {/* Mobile Floating Action Button or Bottom Nav could be better, but let's adjust header for now */}
       </header>
 
       {/* Unified Dashboard Frame */}
@@ -166,7 +206,7 @@ function QueueDisplayPage() {
               <h3 className="text-sm md:text-base font-black uppercase tracking-[0.2em] text-slate-400 flex items-center gap-3">
                 <Users className="h-4 w-4" /> Hàng chờ
               </h3>
-              <span className="px-3 py-1 rounded-full bg-primary/10 text-[9px] font-black text-primary uppercase">{queue.length - 2} người</span>
+              <span className="px-3 py-1 rounded-full bg-primary/10 text-[9px] font-black text-primary uppercase">{queue.length > 2 ? queue.length - 2 : 0} người</span>
             </div>
             
             <div className="flex-1 overflow-y-auto lg:overflow-hidden p-4 md:p-6 space-y-3 md:space-y-4 max-h-[400px] lg:max-h-none">
@@ -210,6 +250,67 @@ function QueueDisplayPage() {
           </div>
         </div>
       </footer>
+
+      {/* Ticket Info Modal */}
+      {foundTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="bg-gradient-primary p-8 text-white relative">
+              <button 
+                onClick={() => setFoundTicket(null)}
+                className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <div className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Thông tin tra cứu</div>
+              <h2 className="text-2xl font-black mt-1">LỊCH HẸN CỦA BẠN</h2>
+            </div>
+            <div className="p-8 text-center">
+              {/* Estimated Time Section - HIGHLIGHTED */}
+              <div className="mb-8">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Giờ phục vụ dự kiến</div>
+                <div className="text-7xl font-black text-primary tracking-tighter">
+                  {(() => {
+                    const matched = queue.find(q => q.id === foundTicket.id);
+                    return matched ? matched.estimatedTime : formatTime(new Date(foundTicket.created_at));
+                  })()}
+                </div>
+                <div className="mt-2 text-[11px] font-bold text-emerald-600 bg-emerald-50 inline-block px-3 py-1 rounded-full">
+                  Vị trí thứ {foundPos + 1} trong hàng chờ
+                </div>
+              </div>
+
+              <div className="bg-slate-50 rounded-3xl p-6 mb-6 border border-slate-100 flex flex-col items-center">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Số thứ tự</div>
+                <div className="text-5xl font-black text-slate-800">
+                  {foundTicket.display_number}
+                </div>
+                <div className="mt-3 flex items-center justify-center gap-2 text-slate-400 text-[9px] font-bold uppercase tracking-widest">
+                  <Clock className="h-3 w-3" /> In lúc {new Date(foundTicket.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+              
+              <div className="space-y-3 text-left bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Họ và tên</span>
+                  <span className="text-xs font-bold text-slate-700 uppercase">{foundTicket.customer_name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Vị trí</span>
+                  <span className="text-xs font-bold text-slate-700">Đang chờ {foundPos} người nữa</span>
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => setFoundTicket(null)}
+                className="w-full mt-8 h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs tracking-widest uppercase shadow-lg shadow-slate-200"
+              >
+                ĐÃ HIỂU
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes marquee {
@@ -262,4 +363,3 @@ function BigCard({ data, label, badgeColor, borderColor, glowColor }: any) {
     </div>
   );
 }
-
