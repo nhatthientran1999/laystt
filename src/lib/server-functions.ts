@@ -63,6 +63,19 @@ export const createTicket = createServerFn({ method: "POST" }).handler(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Kiểm tra xem số điện thoại đã có phiếu chưa (trong ngày hôm nay và chưa hoàn tất/hủy)
+    const { data: existingTicket } = await supabase
+      .from("queues")
+      .select("id, display_number")
+      .eq("phone_number", data.phone)
+      .gte("created_at", today.toISOString())
+      .in("status", ["checked_in", "in_progress", "waiting", "skipped"])
+      .maybeSingle();
+
+    if (existingTicket) {
+      throw new Error(`Số điện thoại này đã đăng ký số ${existingTicket.display_number}. Mỗi số điện thoại chỉ được đăng ký 1 lần trong ngày.`);
+    }
+
     const { count } = await supabase
       .from("queues")
       .select("*", { count: "exact", head: true })
