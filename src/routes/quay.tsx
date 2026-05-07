@@ -431,94 +431,171 @@ function QueueList({ items, search, setSearch, total, onCall, loading }: any) {
 }
 
 function HistoryTable({ history, onRecall, loading }: any) {
+  const [activeTab, setActiveTab] = useState("success");
+
+  // Thống kê
+  const stats = {
+    success: history.filter((h: any) => h.status === 'served').length,
+    skipped: history.filter((h: any) => h.status === 'skipped').length,
+    failed: history.filter((h: any) => h.status === 'canceled').length,
+  };
+
+  const filteredItems = history.filter((h: any) => {
+    if (activeTab === "success") return h.status === 'served';
+    if (activeTab === "skipped") return h.status === 'skipped';
+    if (activeTab === "failed") return h.status === 'canceled';
+    return true;
+  });
+
   return (
-    <div className="bg-white shadow-elegant rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 overflow-hidden">
-      <div className="p-5 md:p-8 border-b border-slate-50 bg-slate-50/30 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div className="flex items-center gap-4">
-          <div className="p-2.5 md:p-3 bg-slate-900 rounded-xl md:rounded-2xl">
-            <History className="h-5 w-5 md:h-6 md:w-6 text-white" />
-          </div>
-          <h2 className="text-xs md:text-sm font-black uppercase tracking-widest text-slate-700">Lịch sử hôm nay</h2>
+    <div className="space-y-4 md:space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-3 md:gap-6">
+        <div className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="text-[10px] md:text-xs font-black text-emerald-600 uppercase tracking-widest mb-1 md:mb-2">Thành công</div>
+          <div className="text-2xl md:text-4xl font-black text-slate-800 tabular-nums">{stats.success}</div>
         </div>
-        <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tight">Vắng mặt được giữ trong 30 phút</p>
+        <div className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="text-[10px] md:text-xs font-black text-amber-600 uppercase tracking-widest mb-1 md:mb-2">Bỏ qua</div>
+          <div className="text-2xl md:text-4xl font-black text-slate-800 tabular-nums">{stats.skipped}</div>
+        </div>
+        <div className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="text-[10px] md:text-xs font-black text-red-600 uppercase tracking-widest mb-1 md:mb-2">Thất bại</div>
+          <div className="text-2xl md:text-4xl font-black text-slate-800 tabular-nums">{stats.failed}</div>
+        </div>
       </div>
 
-      <div className="p-2 md:p-4">
-        {/* Table View (Desktop) */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
-                <th className="px-6 py-5">STT</th>
-                <th className="px-6 py-5">Công dân</th>
-                <th className="px-6 py-5">Trạng thái</th>
-                <th className="px-6 py-5">Thời gian</th>
-                <th className="px-6 py-5 text-right">Hành động</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {history.map((h: any, i: number) => (
-                <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-6 py-5 font-black text-slate-800 text-lg tabular-nums">{h.num}</td>
-                  <td className="px-6 py-5 uppercase font-bold text-sm text-slate-700">{h.name}</td>
-                  <td className="px-6 py-5">
-                     {h.status === 'served' ? (
-                       <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-[9px] font-black text-emerald-600 uppercase">Đã hoàn tất</span>
-                     ) : h.status === 'skipped' ? (
-                       <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-[9px] font-black text-amber-600 uppercase">Vắng mặt (đang chờ)</span>
-                     ) : (
-                       <span className="px-2.5 py-1 rounded-lg bg-red-50 text-[9px] font-black text-red-600 uppercase">Đã hủy</span>
-                     )}
-                  </td>
-                  <td className="px-6 py-5 text-[10px] font-black text-slate-400 tabular-nums">{h.completedAt}</td>
-                  <td className="px-6 py-5 text-right">
-                    {h.status === 'skipped' && (
-                      <button
-                        onClick={() => onRecall(h.id)}
-                        disabled={loading}
-                        className="h-9 px-4 rounded-xl bg-primary text-[9px] font-black text-white hover:bg-primary/90 transition-all uppercase tracking-widest shadow-md disabled:opacity-50"
-                      >
-                        GỌI LẠI
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="bg-white shadow-elegant rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 overflow-hidden">
+        {/* Tabs & Header */}
+        <div className="p-5 md:p-8 border-b border-slate-50 bg-slate-50/30 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-2.5 md:p-3 bg-slate-900 rounded-xl md:rounded-2xl">
+                <History className="h-5 w-5 md:h-6 md:w-6 text-white" />
+              </div>
+              <h2 className="text-xs md:text-sm font-black uppercase tracking-widest text-slate-700">Lịch sử chi tiết</h2>
+            </div>
+            <p className="hidden sm:block text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tight italic">
+              * Vắng mặt quá 30p tự động chuyển vào "Thất bại"
+            </p>
+          </div>
+
+          <div className="flex bg-slate-100 p-1 rounded-xl self-start">
+            <button
+              onClick={() => setActiveTab("success")}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                activeTab === "success" ? "bg-white text-emerald-600 shadow-sm" : "text-slate-400"
+              }`}
+            >
+              Thành công ({stats.success})
+            </button>
+            <button
+              onClick={() => setActiveTab("skipped")}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                activeTab === "skipped" ? "bg-white text-amber-600 shadow-sm" : "text-slate-400"
+              }`}
+            >
+              Bỏ qua ({stats.skipped})
+            </button>
+            <button
+              onClick={() => setActiveTab("failed")}
+              className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                activeTab === "failed" ? "bg-white text-red-600 shadow-sm" : "text-slate-400"
+              }`}
+            >
+              Thất bại ({stats.failed})
+            </button>
+          </div>
         </div>
 
-        {/* Card View (Mobile) */}
-        <div className="md:hidden space-y-3 p-1">
-          {history.map((h: any, i: number) => (
-            <div key={i} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 flex items-center justify-between gap-4">
-              <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-3">
-                  <span className="text-xl font-black text-slate-800 tabular-nums">{h.num}</span>
-                  <span className="text-[10px] font-bold text-slate-700 uppercase truncate">{h.name}</span>
+        <div className="p-2 md:p-4">
+          {/* Table View (Desktop) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
+                  <th className="px-6 py-5">STT</th>
+                  <th className="px-6 py-5">Công dân</th>
+                  <th className="px-6 py-5">Số điện thoại</th>
+                  <th className="px-6 py-5">Trạng thái</th>
+                  <th className="px-6 py-5">Thời gian</th>
+                  <th className="px-6 py-5 text-right">Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {filteredItems.map((h: any, i: number) => (
+                  <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-5 font-black text-slate-800 text-lg tabular-nums">{h.num}</td>
+                    <td className="px-6 py-5 uppercase font-bold text-sm text-slate-700">{h.name}</td>
+                    <td className="px-6 py-5 font-bold text-sm text-slate-400 tabular-nums">{h.phone}</td>
+                    <td className="px-6 py-5">
+                       {h.status === 'served' ? (
+                         <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-[9px] font-black text-emerald-600 uppercase">Thành công</span>
+                       ) : h.status === 'skipped' ? (
+                         <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-[9px] font-black text-amber-600 uppercase">Vắng mặt</span>
+                       ) : (
+                         <span className="px-2.5 py-1 rounded-lg bg-red-50 text-[9px] font-black text-red-600 uppercase">Thất bại</span>
+                       )}
+                    </td>
+                    <td className="px-6 py-5 text-[10px] font-black text-slate-400 tabular-nums">{h.completedAt}</td>
+                    <td className="px-6 py-5 text-right">
+                      {h.status === 'skipped' && (
+                        <button
+                          onClick={() => onRecall(h.id)}
+                          disabled={loading}
+                          className="h-9 px-4 rounded-xl bg-primary text-[9px] font-black text-white hover:bg-primary/90 transition-all uppercase tracking-widest shadow-md disabled:opacity-50"
+                        >
+                          GỌI LẠI
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Card View (Mobile) */}
+          <div className="md:hidden space-y-3 p-1">
+            {filteredItems.map((h: any, i: number) => (
+              <div key={i} className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 flex items-center justify-between gap-4">
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl font-black text-slate-800 tabular-nums">{h.num}</span>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-700 uppercase truncate">{h.name}</span>
+                      <span className="text-[8px] font-bold text-slate-400 tabular-nums">{h.phone}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    {h.status === 'served' ? (
+                      <span className="text-[8px] font-black text-emerald-600 uppercase">Thành công</span>
+                    ) : h.status === 'skipped' ? (
+                      <span className="text-[8px] font-black text-amber-600 uppercase">Bỏ qua</span>
+                    ) : (
+                      <span className="text-[8px] font-black text-red-600 uppercase">Thất bại</span>
+                    )}
+                    <span className="text-[8px] font-bold text-slate-400">{h.completedAt}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  {h.status === 'served' ? (
-                    <span className="text-[8px] font-black text-emerald-600 uppercase">Xong</span>
-                  ) : h.status === 'skipped' ? (
-                    <span className="text-[8px] font-black text-amber-600 uppercase">Vắng</span>
-                  ) : (
-                    <span className="text-[8px] font-black text-red-600 uppercase">Hủy</span>
-                  )}
-                  <span className="text-[8px] font-bold text-slate-400">{h.completedAt}</span>
-                </div>
+                {h.status === 'skipped' && (
+                  <button
+                    onClick={() => onRecall(h.id)}
+                    disabled={loading}
+                    className="h-8 px-4 rounded-lg bg-primary text-[9px] font-black text-white uppercase tracking-widest shrink-0 shadow-sm"
+                  >
+                    GỌI LẠI
+                  </button>
+                )}
               </div>
-              {h.status === 'skipped' && (
-                <button
-                  onClick={() => onRecall(h.id)}
-                  disabled={loading}
-                  className="h-8 px-4 rounded-lg bg-primary text-[9px] font-black text-white uppercase tracking-widest shrink-0 shadow-sm"
-                >
-                  GỌI LẠI
-                </button>
-              )}
+            ))}
+          </div>
+
+          {filteredItems.length === 0 && (
+            <div className="py-20 text-center text-slate-300 font-bold uppercase tracking-widest text-[10px]">
+              Danh sách trống
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>
