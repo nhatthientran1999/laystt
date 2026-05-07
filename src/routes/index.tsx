@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Clock, Calendar, UserCheck, Users, ShieldCheck, Hourglass, Search, Key, X } from "lucide-react";
 import { getQueue, findTicketByPhone } from "@/lib/server-functions";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,6 +35,7 @@ const formatTime = (date: Date) => {
 function QueueDisplayPage() {
   const navigate = useNavigate();
   const rawQueue = useLoaderData({ from: "/" }) as any[];
+  const [queueData, setQueueData] = useState(rawQueue);
   const [now, setNow] = useState(new Date());
   const [searchPhone, setSearchPhone] = useState("");
   const [foundTicket, setFoundTicket] = useState<any>(null);
@@ -55,10 +57,19 @@ function QueueDisplayPage() {
     return () => clearInterval(id);
   }, []);
 
-  // Auto-refresh dữ liệu hàng chờ mỗi 15 giây
+  // Supabase Realtime: Lắng nghe thay đổi dữ liệu để cập nhật UI ngay lập tức
   useEffect(() => {
-    const id = setInterval(() => window.location.reload(), 15000);
-    return () => clearInterval(id);
+    const channel = supabase
+      .channel('public:queues')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'queues' }, async () => {
+        const updatedData = await getQueue();
+        setQueueData(updatedData as any[]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const time = now.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -71,10 +82,11 @@ function QueueDisplayPage() {
       const ticket = await findTicketByPhone({ data: searchPhone });
       if (ticket) {
         setFoundTicket(ticket);
-        // Tính toán vị trí trong hàng chờ hiện tại
-        const queueData = await getQueue();
-        const waitingList = (queueData as any[]).filter(i => i.status === 'waiting');
-        const pos = waitingList.findIndex(i => i.id === ticket.id);
+        // Lọc danh sách: 
+        // 1. Loại bỏ người đang phục vụ (đã hiển thị ở serving bar)
+        // 2. Chỉ lấy người trạng thái 'waiting' (checked_in)
+        const waitingList = queueData.filter((i: any) => i.status === 'waiting');
+        const pos = waitingList.findIndex((i: any) => i.id === ticket.id);
         setFoundPos(pos !== -1 ? pos : 0);
       } else {
         alert("Không tìm thấy thông tin số thứ tự cho số điện thoại này.");
@@ -87,7 +99,7 @@ function QueueDisplayPage() {
   };
 
   // Dùng ETA từ DB (đã được server tính sau mỗi thay đổi trạng thái)
-  const queue = (rawQueue || []).map((item) => {
+  const processedQueue = (queueData || []).map((item: any) => {
     // Fallback nếu DB chưa có ETA: dùng checkin_time + 15p
     const etaDate = item.eta
       ? new Date(item.eta)
@@ -146,8 +158,8 @@ function QueueDisplayPage() {
       <main className="flex-1 p-2.5 md:p-6 lg:pb-3 relative z-10 flex flex-col min-h-0 gap-2.5 md:gap-5">
         {/* Compact Serving Section */}
         <div className="w-full shrink-0">
-           {queue.length > 0 ? (
-             <CompactServingBar data={queue[0]} />
+           {processedQueue.length > 0 ? (
+             <CompactServingBar data={processedQueue.find((i: any) => i.status === 'serving') || processedQueue[0]} />
            ) : (
              <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-xl p-3 text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">
                Hiện không có khách hàng đang phục vụ
@@ -174,8 +186,8 @@ function QueueDisplayPage() {
               </div>
 
               <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-                  {queue.length > 1 ? (
-                    <HeroCard data={queue[1]} />
+                  {processedQueue.length > 1 ? (
+                    <HeroCard data={processedQueue[1]} />
                   ) : (
                     <div className="flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-100 rounded-2xl text-slate-300 py-10">
                       <Users className="h-8 w-8 md:h-16 md:w-16 mb-3 opacity-20" />
@@ -195,12 +207,12 @@ function QueueDisplayPage() {
                 Hàng chờ
               </h3>
               <span className="px-2.5 py-1 md:px-4 md:py-2 rounded-lg md:rounded-xl bg-blue-600 text-[8px] md:text-[11px] font-black text-white uppercase shadow-md shadow-blue-600/20">
-                {queue.length > 2 ? queue.length - 2 : 0} người
+                {processedQueue.length > 2 ? processedQueue.length - 2 : 0} người
               </span>
             </div>
             
             <div className="flex-1 min-h-0 overflow-y-auto p-2.5 md:p-6 space-y-2 md:space-y-4">
-              {queue.slice(2).map((it) => (
+              {processedQueue.slice(2).map((it) => (
                 <div key={it.num} className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white border-2 border-blue-200 flex items-center justify-between transition-all hover:border-blue-600 group shadow-sm">
                   <div className="flex flex-col gap-0.5 md:gap-2">
                     <div className="text-sm md:text-xl font-black text-slate-800 leading-none group-hover:text-blue-600 transition-colors uppercase tracking-tight">{it.name}</div>
@@ -216,7 +228,7 @@ function QueueDisplayPage() {
                 </div>
               ))}
               
-              {queue.length <= 2 && (
+              {processedQueue.length <= 2 && (
                 <div className="h-full flex flex-col items-center justify-center text-slate-300 py-8">
                   <Clock className="h-8 w-8 mb-3 opacity-10" />
                   <p className="font-black uppercase tracking-widest text-[10px]">Trống</p>
