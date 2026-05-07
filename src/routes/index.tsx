@@ -36,7 +36,8 @@ function QueueDisplayPage() {
   const navigate = useNavigate();
   const rawQueue = useLoaderData({ from: "/" }) as any[];
   const [queueData, setQueueData] = useState(rawQueue);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const [searchPhone, setSearchPhone] = useState("");
   const [foundTicket, setFoundTicket] = useState<any>(null);
   const [foundPos, setFoundPos] = useState(0);
@@ -53,6 +54,7 @@ function QueueDisplayPage() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
     // Lấy giờ server 1 lần khi load trang để đồng bộ
     getServerTime().then(timeStr => {
       if (timeStr) {
@@ -87,8 +89,8 @@ function QueueDisplayPage() {
     };
   }, []);
 
-  const time = now.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const date = now.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+  const time = now ? now.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "--:--:--";
+  const date = now ? now.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }) : "Đang tải...";
 
   const handleSearch = async () => {
     if (!searchPhone) return;
@@ -170,6 +172,11 @@ function QueueDisplayPage() {
       </header>
 
       {/* Main Content */}
+      {!isMounted ? (
+        <div className="flex-1 flex items-center justify-center">
+           <Logo size={60} className="animate-pulse opacity-20" />
+        </div>
+      ) : (
       <main className="flex-1 p-2.5 md:p-6 lg:pb-3 relative z-10 flex flex-col min-h-0 gap-2.5 md:gap-5">
         {/* Compact Serving Section */}
         <div className="w-full shrink-0">
@@ -278,6 +285,7 @@ function QueueDisplayPage() {
           </div>
         </div>
       </main>
+      )}
 
       {/* Footer Marquee */}
       <footer className="relative z-10 bg-[#f1f5f9] py-4 md:py-5 border-t border-slate-200/50">

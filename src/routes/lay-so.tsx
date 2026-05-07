@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, CheckCircle2, Clock, Phone, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,8 +33,10 @@ function LaySoPage() {
   ];
 
   const [serverNow, setServerNow] = useState<Date | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     getServerTime().then(timeStr => {
       if (timeStr) setServerNow(new Date(timeStr));
     }).catch(console.error);
@@ -82,7 +84,13 @@ function LaySoPage() {
     <div className="bg-gradient-hero min-h-screen overflow-x-hidden">
       <div className="pointer-events-none absolute -top-24 left-10 h-72 w-72 rounded-full bg-primary/15 blur-3xl animate-blob" />
       <div className="pointer-events-none absolute bottom-10 right-10 h-72 w-72 rounded-full bg-primary-glow/20 blur-3xl animate-blob" />
-      <div className="relative mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 md:px-5 py-6 md:py-10">
+      
+      {!isMounted ? (
+        <div className="relative mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 py-6 md:py-10 items-center justify-center">
+          <Logo size={40} className="animate-pulse" />
+        </div>
+      ) : (
+        <div className="relative mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 md:px-5 py-6 md:py-10">
         <Link to="/" className="mb-6 md:mb-8 self-center">
           <Logo size={40} />
         </Link>
@@ -269,6 +277,7 @@ function LaySoPage() {
           ← Về trang chủ
         </Link>
       </div>
+      )}
     </div>
   );
 }
