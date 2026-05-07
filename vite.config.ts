@@ -8,7 +8,11 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [
     tanstackRouter(),
-    tanstackStart(),
+    tanstackStart({
+      server: {
+        preset: "vercel",
+      },
+    }),
     react(),
     tailwindcss(),
     tsconfigPaths(),
