@@ -1,13 +1,7 @@
 {
   "version": 2,
-  "rewrites": [
-    {
-      "source": "/assets/(.*)",
-      "destination": "/public/assets/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.js"
-    }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/api/index.js" }
   ]
 }
