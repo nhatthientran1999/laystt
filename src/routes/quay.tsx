@@ -1,12 +1,11 @@
 import { createFileRoute, Link, useLoaderData, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
-  Bell, ChevronDown, ChevronLeft, ChevronRight, Clock, Headphones,
-  History, Home, LogOut, Menu, Phone, RotateCw, Search, Settings, SkipForward, User, UserCircle2, Users,
+  CheckCircle, ChevronRight, Clock, History, Home, Search, SkipForward, User, UserCheck, Users,
 } from "lucide-react";
 import { Logo } from "@/components/qms/Logo";
 import { Input } from "@/components/ui/input";
-import { getQueue, getHistory, callNextTicket, skipTicket } from "@/lib/server-functions";
+import { getQueue, getHistory, callNextTicket, skipTicket, completeTicket, runGracePeriodCleanup, recallTicket } from "@/lib/server-functions";
 
 export const Route = createFileRoute("/quay")({
   head: () => ({
@@ -29,8 +28,14 @@ function QuayPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Tách dữ liệu: người đang phục vụ và người đang chờ
+  // Trigger cleanup SKIPPED → CANCELED mỗi khi load trang
+  useEffect(() => {
+    runGracePeriodCleanup({ data: undefined }).catch(console.error);
+  }, []);
+
+  // Người đang IN_PROGRESS (serving)
   const servingItem = initialQueue.find((i: any) => i.status === 'serving');
+  // Người CHECKED_IN tiếp theo (mời chuẩn bị)
   const waitingItems = initialQueue.filter((i: any) => i.status === 'waiting');
 
   const callNext = async () => {
@@ -45,15 +50,42 @@ function QuayPage() {
     }
   };
 
+  const completeCurrent = async () => {
+    if (!servingItem) return;
+    setLoading(true);
+    try {
+      await completeTicket({ data: { ticketId: servingItem.id, counterId: 1 } });
+      window.location.reload();
+    } catch (err) {
+      alert("Lỗi khi hoàn tất: " + (err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const skipCurrent = async () => {
     if (!servingItem) return;
     setLoading(true);
     try {
+      // Bỏ qua người hiện tại (SKIPPED, chưa hủy ngay)
       await skipTicket({ data: { ticketId: servingItem.id } });
+      // Gọi người tiếp theo trong hàng
       await callNextTicket({ data: { counterId: 1 } });
       window.location.reload();
     } catch (err) {
       alert("Lỗi khi bỏ qua: " + (err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRecall = async (ticketId: string) => {
+    setLoading(true);
+    try {
+      await recallTicket({ data: { ticketId, counterId: 1 } });
+      window.location.reload();
+    } catch (err) {
+      alert("Lỗi khi gọi lại: " + (err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -64,8 +96,10 @@ function QuayPage() {
     num: item.display_number,
     name: item.customer_name,
     phone: item.phone_number,
-    time: new Date(item.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-    service: item.service_type
+    time: new Date(item.checkin_time || item.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+    service: item.service_type,
+    eta: item.eta ? new Date(item.eta).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : null,
+    status: item.status,
   }));
 
   const current = servingItem ? {
@@ -73,7 +107,10 @@ function QuayPage() {
     num: servingItem.display_number,
     name: servingItem.customer_name,
     phone: servingItem.phone_number,
-    service: servingItem.service_type
+    service: servingItem.service_type,
+    startedAt: servingItem.started_at
+      ? new Date(servingItem.started_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      : null,
   } : null;
 
   const filteredQueue = formattedQueue.filter(
@@ -81,6 +118,7 @@ function QuayPage() {
   );
 
   const formattedHistory = initialHistory.map((h: any) => ({
+    id: h.id,
     num: h.display_number,
     name: h.customer_name,
     phone: h.phone_number,
@@ -89,7 +127,7 @@ function QuayPage() {
   }));
 
   return (
-    <div className="flex min-h-screen bg-secondary/40 font-sans">
+    <div className="flex min-h-screen lg:h-screen overflow-x-hidden lg:overflow-hidden bg-secondary/40 font-sans">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 overflow-x-hidden pb-10">
         <TopBar />
@@ -98,7 +136,8 @@ function QuayPage() {
             <>
               <ServingCard 
                 current={current} 
-                onNext={callNext} 
+                onNext={callNext}
+                onComplete={completeCurrent}
                 onSkip={skipCurrent} 
                 loading={loading}
                 servingItem={servingItem}
@@ -106,7 +145,7 @@ function QuayPage() {
               <QueueList items={filteredQueue} search={search} setSearch={setSearch} total={formattedQueue.length} />
             </>
           ) : (
-            <HistoryTable history={formattedHistory} />
+            <HistoryTable history={formattedHistory} onRecall={handleRecall} loading={loading} />
           )}
         </div>
       </main>
@@ -166,13 +205,20 @@ function TopBar() {
   );
 }
 
-function ServingCard({ current, onNext, onSkip, loading, servingItem }: any) {
+function ServingCard({ current, onNext, onComplete, onSkip, loading, servingItem }: any) {
   return (
-    <div className="bg-white shadow-elegant grid grid-cols-1 gap-8 rounded-[2.5rem] border border-slate-100 p-10 lg:grid-cols-[1fr_auto_auto]">
+    <div className="bg-white shadow-elegant grid grid-cols-1 gap-8 rounded-[2.5rem] border border-slate-100 p-10 lg:grid-cols-[1fr_auto_auto_auto]">
       <div className="flex flex-col justify-center">
         <div className="flex items-center gap-3 mb-4">
-           <span className="px-3 py-1 rounded-lg bg-red-50 text-[10px] font-black text-red-600 uppercase tracking-widest border border-red-100">Đang phục vụ</span>
-           <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+           <span className="px-3 py-1 rounded-lg bg-red-50 text-[10px] font-black text-red-600 uppercase tracking-widest border border-red-100">
+             {servingItem ? 'Đang phục vụ' : 'Hàng chờ trống'}
+           </span>
+           {servingItem && <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />}
+           {current?.startedAt && (
+             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+               <Clock className="h-3 w-3" /> Bắt đầu: {current.startedAt}
+             </span>
+           )}
         </div>
         
         <div className="flex items-baseline gap-6">
@@ -181,7 +227,7 @@ function ServingCard({ current, onNext, onSkip, loading, servingItem }: any) {
           </div>
           <div className="flex flex-col">
              <div className="text-3xl font-black text-slate-800 uppercase tracking-tight leading-tight">
-               {current?.name || "Hàng chờ trống"}
+               {current?.name || "Không có ai đang chờ"}
              </div>
              <div className="text-lg font-bold text-slate-300 mt-1 tabular-nums">
                 {current?.phone || "SĐT: ---"}
@@ -196,6 +242,19 @@ function ServingCard({ current, onNext, onSkip, loading, servingItem }: any) {
         </div>
       </div>
       
+      {/* Hoàn tất */}
+      <div className="flex flex-col items-center justify-center">
+        <ActionButton
+          onClick={onComplete}
+          className="bg-emerald-600 text-white hover:bg-emerald-500 hover:shadow-emerald-500/20"
+          label="XONG"
+          sub="Hoàn tất phiên làm việc"
+          icon={<CheckCircle className="h-10 w-10" />}
+          disabled={loading || !servingItem}
+        />
+      </div>
+
+      {/* Gọi tiếp */}
       <div className="flex flex-col items-center justify-center">
         <ActionButton
           onClick={onNext}
@@ -207,12 +266,13 @@ function ServingCard({ current, onNext, onSkip, loading, servingItem }: any) {
         />
       </div>
 
+      {/* Bỏ qua */}
       <div className="flex flex-col items-center justify-center">
         <ActionButton
           onClick={onSkip}
           className="bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-100"
           label="BỎ QUA"
-          sub="Khách vắng mặt"
+          sub="Khách vắng mặt — giữ 30 phút"
           icon={<SkipForward className="h-10 w-10" />}
           disabled={loading || !servingItem}
         />
@@ -290,8 +350,15 @@ function QueueList({ items, search, setSearch, total }: any) {
                 </td>
                 <td className="px-6 py-6 font-bold text-slate-500 tabular-nums text-xs">{q.phone}</td>
                 <td className="px-6 py-6">
-                   <div className="flex items-center gap-2 text-[10px] font-black text-slate-400">
-                      <Clock className="h-3.5 w-3.5" /> {q.time}
+                   <div className="flex flex-col gap-1">
+                     <div className="flex items-center gap-2 text-[10px] font-black text-slate-400">
+                       <Clock className="h-3.5 w-3.5" /> Check-in: {q.time}
+                     </div>
+                     {q.eta && (
+                       <div className="flex items-center gap-2 text-[10px] font-black text-primary">
+                         <UserCheck className="h-3.5 w-3.5" /> ETA: {q.eta}
+                       </div>
+                     )}
                    </div>
                 </td>
                 <td className="px-6 py-6 text-right">
@@ -318,14 +385,17 @@ function QueueList({ items, search, setSearch, total }: any) {
   );
 }
 
-function HistoryTable({ history }: any) {
+function HistoryTable({ history, onRecall, loading }: any) {
   return (
     <div className="bg-white shadow-elegant rounded-[2.5rem] border border-slate-100 overflow-hidden">
-      <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center gap-4">
-        <div className="p-3 bg-slate-900 rounded-2xl">
-          <History className="h-6 w-6 text-white" />
+      <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-slate-900 rounded-2xl">
+            <History className="h-6 w-6 text-white" />
+          </div>
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-700">Lịch sử hôm nay</h2>
         </div>
-        <h2 className="text-sm font-black uppercase tracking-widest text-slate-700">Lịch sử hôm nay</h2>
+        <p className="text-[10px] font-bold text-slate-400 uppercase">Khách vắng mặt được giữ trong 30 phút</p>
       </div>
       <div className="overflow-x-auto p-4">
         <table className="w-full text-left">
@@ -335,21 +405,35 @@ function HistoryTable({ history }: any) {
               <th className="px-6 py-5">Khách hàng</th>
               <th className="px-6 py-5">Trạng thái</th>
               <th className="px-6 py-5">Thời gian</th>
+              <th className="px-6 py-5 text-right">Hành động</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {history.map((h: any, i: number) => (
-              <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+              <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                 <td className="px-6 py-5 font-black text-slate-800 text-lg tabular-nums">{h.num}</td>
                 <td className="px-6 py-5 uppercase font-bold text-sm text-slate-700">{h.name}</td>
                 <td className="px-6 py-5">
                    {h.status === 'served' ? (
-                     <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-[9px] font-black text-emerald-600 uppercase">Đã phục vụ</span>
+                     <span className="px-2.5 py-1 rounded-lg bg-emerald-50 text-[9px] font-black text-emerald-600 uppercase">Đã hoàn tất</span>
+                   ) : h.status === 'skipped' ? (
+                     <span className="px-2.5 py-1 rounded-lg bg-amber-50 text-[9px] font-black text-amber-600 uppercase">Vắng mặt (đang chờ)</span>
                    ) : (
-                     <span className="px-2.5 py-1 rounded-lg bg-red-50 text-[9px] font-black text-red-600 uppercase">Bỏ qua</span>
+                     <span className="px-2.5 py-1 rounded-lg bg-red-50 text-[9px] font-black text-red-600 uppercase">Đã hủy</span>
                    )}
                 </td>
                 <td className="px-6 py-5 text-[10px] font-black text-slate-400 tabular-nums">{h.completedAt}</td>
+                <td className="px-6 py-5 text-right">
+                  {h.status === 'skipped' && (
+                    <button
+                      onClick={() => onRecall(h.id)}
+                      disabled={loading}
+                      className="h-9 px-4 rounded-xl bg-primary text-[9px] font-black text-white hover:bg-primary/90 transition-all uppercase tracking-widest shadow-md disabled:opacity-50"
+                    >
+                      GỌI LẠI
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

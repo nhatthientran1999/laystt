@@ -33,29 +33,15 @@ function LaySoPage() {
   ];
 
   const getEstimatedTime = () => {
-    if (!ticketData || !queueDataRaw) return "--:--";
-    
-    // Thuật toán tịnh tiến thông minh: Duyệt qua toàn bộ hàng chờ để tìm giờ dự kiến của số vừa lấy
-    let lastEst = new Date(0);
-    const targetId = ticketData.id;
-    let finalEst = new Date(ticketData.created_at);
-
-    const sortedQueue = [...queueDataRaw].sort((a, b) => 
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
-
-    for (const item of sortedQueue) {
-      const createdAt = new Date(item.created_at);
-      const currentEst = new Date(Math.max(createdAt.getTime(), lastEst.getTime() + 15 * 60000));
-      lastEst = currentEst;
-      
-      if (item.id === targetId) {
-        finalEst = currentEst;
-        break;
-      }
+    if (!ticketData) return "--:--";
+    // Dùng ETA động từ DB (được tính bởi server sau mỗi thay đổi trạng thái)
+    if (ticketData.eta) {
+      return new Date(ticketData.eta).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
     }
-
-    return finalEst.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    // Fallback: checkin_time + 15 phút
+    const base = ticketData.checkin_time || ticketData.created_at;
+    return new Date(new Date(base).getTime() + 15 * 60000)
+      .toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
