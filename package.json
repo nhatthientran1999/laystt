@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) { fs.cpSync('dist/client', 'dist', {recursive:true, overwrite:true}); } if(!fs.existsSync('api')) fs.mkdirSync('api'); if(fs.existsSync('dist/server/server.js')) fs.copyFileSync('dist/server/server.js', 'api/server.js'); if(fs.existsSync('dist/server/assets')) { if(fs.existsSync('api/assets')) fs.rmSync('api/assets', {recursive:true}); fs.cpSync('dist/server/assets', 'api/assets', {recursive:true}); }\"",
+    "build": "vite build && node -e \"const fs=require('fs'); if(fs.existsSync('public')) fs.rmSync('public', {recursive:true}); fs.mkdirSync('public/assets', {recursive:true}); if(!fs.existsSync('api')) fs.mkdirSync('api'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'public', {recursive:true}); if(fs.existsSync('dist/server/server.js')) fs.copyFileSync('dist/server/server.js', 'api/server.js'); if(fs.existsSync('dist/server/assets')) { if(fs.existsSync('api/assets')) fs.rmSync('api/assets', {recursive:true}); fs.cpSync('dist/server/assets', 'api/assets', {recursive:true}); }\"",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
