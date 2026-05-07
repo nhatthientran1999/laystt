@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "App xếp hàng — Smart Queue" },
-      { name: "description", content: "ANCS Dương Sơn Thân Tặng" },
+      { name: "description", content: "Code By ANCS Dương Sơn" },
     ],
   }),
   loader: () => getQueue(),
@@ -274,7 +274,7 @@ function QueueDisplayPage() {
             </div>
           </div>
           <div className="hidden md:block pr-12 text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 whitespace-nowrap bg-[#f1f5f9] relative z-20">
-            ANCS Dương Sơn Thân Tặng App
+            Code By ANCS Dương Sơn
           </div>
         </div>
       </footer>
