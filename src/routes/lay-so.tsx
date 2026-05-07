@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/qms/Logo";
-import { createTicket, getQueue } from "@/lib/server-functions";
+import { createTicket, getQueue, getServerTime } from "@/lib/server-functions";
 
 export const Route = createFileRoute("/lay-so")({
   head: () => ({
@@ -32,10 +32,25 @@ function LaySoPage() {
     "Thủ tục cấp định danh điện tử mức độ 2"
   ];
 
+  const [serverNow, setServerNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    getServerTime().then(timeStr => {
+      if (timeStr) setServerNow(new Date(timeStr));
+    }).catch(console.error);
+  }, []);
+
   const isWithinRegistrationHours = () => {
-    const now = new Date();
-    const hours = now.getHours();
-    const minutes = now.getMinutes();
+    // Nếu chưa lấy được giờ server, tạm thời dùng giờ local (sẽ cập nhật ngay khi có kết quả)
+    const now = serverNow || new Date();
+    
+    // Đảm bảo tính toán theo múi giờ Việt Nam (GMT+7) 
+    // để "ghim" giờ online bất kể máy khách cài đặt gì
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const vnTime = new Date(utc + (3600000 * 7));
+
+    const hours = vnTime.getHours();
+    const minutes = vnTime.getMinutes();
     const currentTime = hours * 60 + minutes;
 
     const morningStart = 6 * 60;

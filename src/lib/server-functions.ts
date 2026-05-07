@@ -91,7 +91,7 @@ export const createTicket = createServerFn({ method: "POST" }).handler(
         customer_name: data.name,
         phone_number: data.phone,
         service_type: data.service,
-        status: "checked_in",          // Lấy số tại chỗ = đã có mặt ngay
+        status: "checked_in",
         checkin_time: new Date().toISOString(),
         scheduled_time: new Date().toISOString(),
         avg_service_mins: AVG_SERVICE_MINS,
@@ -251,9 +251,9 @@ export const getHistory = createServerFn({ method: "GET" }).handler(async () => 
 // Gọi mỗi khi tải trang hoặc theo interval ở client
 // ─────────────────────────────────────────────────────────────────────────────
 export const runGracePeriodCleanup = createServerFn({ method: "POST" }).handler(async () => {
-  const { data, error } = await supabase.rpc("auto_cancel_expired_skipped");
+  const { data, error } = await supabase.rpc("auto_delete_expired_skipped");
   if (error) throw new Error(error.message);
-  return { canceledCount: data };
+  return { deletedCount: data };
 });
 // ─────────────────────────────────────────────────────────────────────────────
 // API 10: Gọi lại số vắng mặt (Recall)
@@ -271,3 +271,11 @@ export const recallTicket = createServerFn({ method: "POST" }).handler(
     return result;
   }
 );
+// ─────────────────────────────────────────────────────────────────────────────
+// API 11: Lấy giờ hệ thống online từ DB
+// ─────────────────────────────────────────────────────────────────────────────
+export const getServerTime = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await supabase.rpc("get_server_time");
+  if (error) throw new Error(error.message);
+  return data;
+});

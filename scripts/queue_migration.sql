@@ -123,10 +123,8 @@ BEGIN
   IF v_appt.status = 'skipped' THEN
     v_minutes_late := EXTRACT(EPOCH FROM (NOW() - v_appt.skipped_at)) / 60;
     IF v_minutes_late > 30 THEN
-      UPDATE queues SET status = 'canceled', updated_at = NOW() WHERE id = v_appt.id;
-      INSERT INTO queue_status_logs (queue_id, from_status, to_status, changed_by, reason)
-      VALUES (v_appt.id, 'skipped', 'canceled', 'system', 'Quá grace period khi check-in');
-      RETURN jsonb_build_object('success', false, 'message', 'Đã quá thời gian ân hạn 30 phút. Lịch hẹn bị hủy.');
+      DELETE FROM queues WHERE id = v_appt.id;
+      RETURN jsonb_build_object('success', false, 'message', 'Đã quá thời gian ân hạn 30 phút. Lịch hẹn đã bị xóa khỏi hệ thống.');
     END IF;
   END IF;
 
@@ -198,27 +196,19 @@ END;
 $$;
 
 -- ============================================================
--- RPC 5: auto_cancel_expired_skipped (Cronjob thay thế)
+-- RPC 5: auto_delete_expired_skipped (Cronjob thay thế)
 -- Gọi thủ công hoặc qua pg_cron mỗi phút
 -- ============================================================
-CREATE OR REPLACE FUNCTION auto_cancel_expired_skipped()
+CREATE OR REPLACE FUNCTION auto_delete_expired_skipped()
 RETURNS INTEGER
 LANGUAGE plpgsql
 AS $$
 DECLARE
   v_count INTEGER;
 BEGIN
-  WITH canceled AS (
-    UPDATE queues
-    SET status     = 'canceled',
-        updated_at = NOW()
-    WHERE status     = 'skipped'
-      AND skipped_at < NOW() - INTERVAL '30 minutes'
-    RETURNING id
-  )
-  INSERT INTO queue_status_logs (queue_id, from_status, to_status, changed_by, reason)
-  SELECT id, 'skipped', 'canceled', 'system', 'Tự động hủy - quá grace period 30 phút'
-  FROM canceled;
+  DELETE FROM queues
+  WHERE status = 'skipped'
+    AND skipped_at < NOW() - INTERVAL '30 minutes';
 
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
@@ -250,6 +240,16 @@ BEGIN
 
   RETURN jsonb_build_object('success', true);
 END;
+$$;
+
+-- ============================================================
+-- RPC 7: get_server_time — Lấy giờ hệ thống online
+-- ============================================================
+CREATE OR REPLACE FUNCTION get_server_time()
+RETURNS TIMESTAMPTZ
+LANGUAGE sql
+AS $$
+  SELECT NOW();
 $$;
 
 -- ============================================================

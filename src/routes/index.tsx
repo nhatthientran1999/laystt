@@ -4,7 +4,7 @@ import { Logo } from "@/components/qms/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Clock, Calendar, UserCheck, Users, ShieldCheck, Hourglass, Search, Key, X } from "lucide-react";
-import { getQueue, findTicketByPhone } from "@/lib/server-functions";
+import { getQueue, findTicketByPhone, getServerTime } from "@/lib/server-functions";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
@@ -53,8 +53,23 @@ function QueueDisplayPage() {
   };
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
+    // Lấy giờ server 1 lần khi load trang để đồng bộ
+    getServerTime().then(timeStr => {
+      if (timeStr) {
+        const serverDate = new Date(timeStr);
+        const diff = serverDate.getTime() - new Date().getTime();
+        
+        const id = setInterval(() => {
+          // Tính giờ hiện tại dựa trên độ lệch (diff) với server
+          setNow(new Date(new Date().getTime() + diff));
+        }, 1000);
+        return () => clearInterval(id);
+      }
+    }).catch(() => {
+      // Fallback nếu lỗi fetch server time
+      const id = setInterval(() => setNow(new Date()), 1000);
+      return () => clearInterval(id);
+    });
   }, []);
 
   // Supabase Realtime: Lắng nghe thay đổi dữ liệu để cập nhật UI ngay lập tức
