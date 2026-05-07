@@ -51,6 +51,13 @@ export const findTicketByPhone = createServerFn({ method: "GET" })
  */
 export const callNextTicket = createServerFn({ method: "POST" })
   .handler(async ({ data }: { data: { counterId: number } }) => {
+    // 1. Chuyển người đang phục vụ hiện tại sang 'served'
+    await supabase
+      .from("queues")
+      .update({ status: "served" })
+      .eq("status", "serving");
+
+    // 2. Lấy người đang chờ tiếp theo
     const { data: nextTicket, error: fetchError } = await supabase
       .from("queues")
       .select("*")
@@ -61,6 +68,7 @@ export const callNextTicket = createServerFn({ method: "POST" })
 
     if (fetchError || !nextTicket) return null;
 
+    // 3. Cập nhật người đó thành 'serving'
     await supabase
       .from("queues")
       .update({ status: "serving", counter_number: data.counterId })
@@ -83,7 +91,7 @@ export const skipTicket = createServerFn({ method: "POST" })
   });
 
 /**
- * Hàm lấy danh sách hàng chờ
+ * Hàm lấy danh sách hàng chờ (Waiting + Serving)
  */
 export const getQueue = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await supabase
@@ -91,6 +99,21 @@ export const getQueue = createServerFn({ method: "GET" }).handler(async () => {
     .select("*")
     .in("status", ["waiting", "serving"])
     .order("created_at", { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data;
+});
+
+/**
+ * Hàm lấy lịch sử (Served + Skipped)
+ */
+export const getHistory = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await supabase
+    .from("queues")
+    .select("*")
+    .in("status", ["served", "skipped"])
+    .order("created_at", { ascending: false })
+    .limit(50);
 
   if (error) throw new Error(error.message);
   return data;
