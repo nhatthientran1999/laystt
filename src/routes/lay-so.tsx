@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/qms/Logo";
+import { createTicket } from "@/lib/server-functions";
 
 export const Route = createFileRoute("/lay-so")({
   head: () => ({
@@ -21,6 +22,8 @@ function LaySoPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [service, setService] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [ticketData, setTicketData] = useState<any>(null);
 
   const services = [
     "Thủ tục cấp Căn cước",
@@ -38,9 +41,18 @@ function LaySoPage() {
 
         {!submitted ? (
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              setSubmitted(true);
+              setLoading(true);
+              try {
+                const res = await createTicket({ data: { name, phone, service } });
+                setTicketData(res);
+                setSubmitted(true);
+              } catch (err) {
+                alert("Lỗi khi lấy số: " + (err as Error).message);
+              } finally {
+                setLoading(false);
+              }
             }}
             className="bg-card shadow-elegant rounded-3xl border border-border p-8"
           >
@@ -98,9 +110,9 @@ function LaySoPage() {
               type="submit"
               size="lg"
               className="bg-gradient-primary shadow-soft mt-6 md:mt-8 h-12 md:h-14 w-full text-sm md:text-base font-black tracking-wider rounded-2xl"
-              disabled={!name || !phone || !service}
+              disabled={!name || !phone || !service || loading}
             >
-              LẤY SỐ THỨ TỰ
+              {loading ? "ĐANG XỬ LÝ..." : "LẤY SỐ THỨ TỰ"}
             </Button>
           </form>
         ) : (
@@ -127,10 +139,10 @@ function LaySoPage() {
                 Số thứ tự của bạn
               </div>
               <div className="bg-gradient-primary mt-1 bg-clip-text text-5xl md:text-7xl font-extrabold tracking-tight text-transparent">
-                A123
+                {ticketData?.display_number || "---"}
               </div>
               <div className="mt-2 inline-flex items-center gap-1.5 text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
-                <Clock className="h-3 w-3" /> 10:30 — 07/05/2026
+                <Clock className="h-3 w-3" /> {ticketData ? new Date(ticketData.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : "--:--"} — {ticketData ? new Date(ticketData.created_at).toLocaleDateString('vi-VN') : "--/--/----"}
               </div>
             </div>
 

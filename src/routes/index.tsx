@@ -1,9 +1,9 @@
-import { useNavigate, createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useNavigate, createFileRoute, Link, useLoaderData } from "@tanstack/react-router";
 import { Logo } from "@/components/qms/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Clock, Calendar, UserCheck, Users, ShieldCheck, Hourglass, Search, Key } from "lucide-react";
+import { getQueue } from "@/lib/server-functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -12,6 +12,7 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "ANCS Dương Sơn Thân Tặng App" },
     ],
   }),
+  loader: () => getQueue(),
   component: QueueDisplayPage,
 });
 
@@ -34,6 +35,7 @@ const calculateEstimatedTime = (index: number) => {
 
 function QueueDisplayPage() {
   const navigate = useNavigate();
+  const rawQueue = useLoaderData({ from: "/" }) as any[];
   const [now, setNow] = useState(new Date());
 
   const handleAdminAccess = (e: React.MouseEvent) => {
@@ -54,18 +56,13 @@ function QueueDisplayPage() {
   const time = now.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   const date = now.toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
 
-  const rawQueue = [
-    { num: "A102", name: "PHAN ANH QUỐC", phone: "0905 123 789", service: "Thủ tục Căn cước" },
-    { num: "A103", name: "LÊ THỊ LAN", phone: "0912 456 789", service: "Định danh điện tử cấp 2" },
-    { num: "A104", name: "NGUYỄN ĐỨC HƯNG", phone: "0987 321 654" },
-    { num: "A105", name: "LÊ THỊ MAI", phone: "0905 789 123" },
-    { num: "A106", name: "TRẦN VĂN TÂM", phone: "0934 111 222" },
-    { num: "A107", name: "VŨ THỊ HỒNG", phone: "0911 333 444" },
-  ];
-
-  const queue = rawQueue.map((item, index) => ({
+  const queue = (rawQueue || []).map((item, index) => ({
     ...item,
-    maskedPhone: maskPhone(item.phone),
+    name: item.customer_name,
+    num: item.display_number,
+    phone: item.phone_number,
+    service: item.service_type,
+    maskedPhone: maskPhone(item.phone_number),
     estimatedTime: calculateEstimatedTime(index),
   }));
 
@@ -135,20 +132,32 @@ function QueueDisplayPage() {
         <div className="h-full w-full bg-white rounded-3xl md:rounded-[3rem] shadow-[0_30px_80px_-20px_rgba(37,99,235,0.12)] border border-slate-200 overflow-hidden flex flex-col lg:flex-row">
           {/* Left: Detailed Cards Section */}
           <div className="flex-1 p-4 md:p-8 grid grid-cols-1 md:grid-rows-2 gap-4 md:gap-6 border-b lg:border-b-0 lg:border-r border-slate-100 min-h-0">
-             <BigCard 
-                data={queue[0]} 
-                label="ĐANG PHỤC VỤ" 
-                badgeColor="bg-red-600 text-white" 
-                borderColor="border-red-500"
-                glowColor="bg-red-50/50"
-              />
-              <BigCard 
-                data={queue[1]} 
-                label="TIẾP THEO" 
-                badgeColor="bg-emerald-600 text-white" 
-                borderColor="border-emerald-500"
-                glowColor="bg-emerald-50/50"
-              />
+              {queue.length > 0 ? (
+                <BigCard 
+                  data={queue[0]} 
+                  label="ĐANG PHỤC VỤ" 
+                  badgeColor="bg-red-600 text-white" 
+                  borderColor="border-red-500"
+                  glowColor="bg-red-50/50"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-bold">
+                  CHƯA CÓ AI ĐANG PHỤC VỤ
+                </div>
+              )}
+              {queue.length > 1 ? (
+                <BigCard 
+                  data={queue[1]} 
+                  label="TIẾP THEO" 
+                  badgeColor="bg-emerald-600 text-white" 
+                  borderColor="border-emerald-500"
+                  glowColor="bg-emerald-50/50"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full border-2 border-dashed border-slate-200 rounded-3xl text-slate-400 font-bold">
+                  CHƯA CÓ SỐ TIẾP THEO
+                </div>
+              )}
           </div>
 
           {/* Right: Sidebar Waiting List Section */}
