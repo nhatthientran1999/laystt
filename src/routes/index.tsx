@@ -11,7 +11,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "App xếp hàng — Smart Queue" },
-      { name: "description", content: "ANCS Dương Sơn Thân Tặng App" },
+      { name: "description", content: "ANCS Dương Sơn Thân Tặng" },
     ],
   }),
   loader: () => getQueue(),
@@ -138,14 +138,14 @@ function QueueDisplayPage() {
             <div className="text-2xl font-black tabular-nums text-slate-800 leading-none">{time.slice(0, 5)}</div>
             <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{date}</div>
           </div>
-          
+
           <Button asChild className="rounded-lg md:rounded-xl h-8 md:h-11 px-3 md:px-6 text-[11px] md:text-sm font-black bg-gradient-primary shadow-soft text-white">
             <Link to="/lay-so">Lấy số ngay</Link>
           </Button>
 
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-8 w-8 md:h-11 md:w-11 rounded-lg md:rounded-xl text-slate-400 hover:text-primary hover:bg-primary/5"
             onClick={handleAdminAccess}
           >
@@ -158,43 +158,43 @@ function QueueDisplayPage() {
       <main className="flex-1 p-2.5 md:p-6 lg:pb-3 relative z-10 flex flex-col min-h-0 gap-2.5 md:gap-5">
         {/* Compact Serving Section */}
         <div className="w-full shrink-0">
-           {processedQueue.length > 0 ? (
-             <CompactServingBar data={processedQueue.find((i: any) => i.status === 'serving') || processedQueue[0]} />
-           ) : (
-             <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-xl p-3 text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-               Hiện không có công dân đang phục vụ
-             </div>
-           )}
+          {processedQueue.length > 0 ? (
+            <CompactServingBar data={processedQueue.find((i: any) => i.status === 'serving') || processedQueue[0]} />
+          ) : (
+            <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-xl p-3 text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+              Hiện không có công dân đang phục vụ
+            </div>
+          )}
         </div>
 
         <div className="flex-1 w-full flex flex-col lg:flex-row gap-2.5 md:gap-5 min-h-0">
           {/* Left: Mời chuẩn bị */}
           <div className="flex-1 lg:flex-[2] p-3.5 md:p-8 border-4 md:border-[8px] border-red-600 rounded-xl md:rounded-[3rem] bg-white flex flex-col min-h-0 relative shadow-[0_20px_60px_-15px_rgba(220,38,38,0.15)] overflow-hidden">
-              <div className="shrink-0 mb-2.5 md:mb-5 flex items-center justify-between">
-                <div className="flex items-center gap-2 md:gap-4">
-                  <div className="h-7 w-7 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-red-600 flex items-center justify-center shadow-md shadow-red-200">
-                     <UserCheck className="h-3.5 w-3.5 md:h-5 md:w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-[11px] md:text-base font-black text-slate-800 uppercase tracking-tight">Mời chuẩn bị</h3>
-                    <p className="text-[7px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">Tiếp theo</p>
-                  </div>
+            <div className="shrink-0 mb-2.5 md:mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-2 md:gap-4">
+                <div className="h-7 w-7 md:h-10 md:w-10 rounded-lg md:rounded-xl bg-red-600 flex items-center justify-center shadow-md shadow-red-200">
+                  <UserCheck className="h-3.5 w-3.5 md:h-5 md:w-5 text-white" />
                 </div>
-                <div className="px-2 py-0.5 md:px-3 md:py-1 rounded-full bg-red-50 text-red-600 text-[7px] md:text-[10px] font-black uppercase tracking-widest border border-red-100">
-                  Sắp đến lượt
+                <div>
+                  <h3 className="text-[11px] md:text-base font-black text-slate-800 uppercase tracking-tight">Mời chuẩn bị</h3>
+                  <p className="text-[7px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-0.5">Tiếp theo</p>
                 </div>
               </div>
+              <div className="px-2 py-0.5 md:px-3 md:py-1 rounded-full bg-red-50 text-red-600 text-[7px] md:text-[10px] font-black uppercase tracking-widest border border-red-100">
+                Sắp đến lượt
+              </div>
+            </div>
 
-              <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-                  {processedQueue.length > 1 ? (
-                    <HeroCard data={processedQueue[1]} />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-100 rounded-2xl text-slate-300 py-10">
-                      <Users className="h-8 w-8 md:h-16 md:w-16 mb-3 opacity-20" />
-                      <span className="font-black uppercase tracking-[0.2em] text-[9px] md:text-xs">Chưa có số tiếp theo</span>
-                    </div>
-                  )}
-              </div>
+            <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+              {processedQueue.length > 1 ? (
+                <HeroCard data={processedQueue[1]} />
+              ) : (
+                <div className="flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-100 rounded-2xl text-slate-300 py-10">
+                  <Users className="h-8 w-8 md:h-16 md:w-16 mb-3 opacity-20" />
+                  <span className="font-black uppercase tracking-[0.2em] text-[9px] md:text-xs">Chưa có số tiếp theo</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right: Waiting List */}
@@ -210,7 +210,7 @@ function QueueDisplayPage() {
                 {processedQueue.length > 2 ? processedQueue.length - 2 : 0} người
               </span>
             </div>
-            
+
             <div className="flex-1 min-h-0 overflow-y-auto p-2.5 md:p-6 space-y-2 md:space-y-4">
               {processedQueue.slice(2).map((it) => (
                 <div key={it.num} className="p-3 md:p-6 rounded-xl md:rounded-3xl bg-white border-2 border-blue-200 flex items-center justify-between transition-all hover:border-blue-600 group shadow-sm">
@@ -220,14 +220,14 @@ function QueueDisplayPage() {
                       <div className="text-xs md:text-lg font-black text-slate-900 tabular-nums tracking-widest">{it.maskedPhone}</div>
                       <div className="h-1 w-1 rounded-full bg-slate-200" />
                       <div className="text-[10px] md:text-sm font-black text-blue-600 flex items-center gap-1 bg-blue-50 px-1.5 md:px-3 py-0.5 md:py-1 rounded-full">
-                         <Hourglass className="h-2.5 w-2.5 md:h-4 md:w-4" /> {it.estimatedTime}
+                        <Hourglass className="h-2.5 w-2.5 md:h-4 md:w-4" /> {it.estimatedTime}
                       </div>
                     </div>
                   </div>
                   <div className="text-lg md:text-3xl font-black text-white bg-blue-600 shadow-md shadow-blue-600/30 px-3 py-1.5 md:px-5 md:py-3 rounded-lg md:rounded-xl tabular-nums tracking-tighter group-hover:scale-105 transition-transform shrink-0 ml-2">{it.num}</div>
                 </div>
               ))}
-              
+
               {processedQueue.length <= 2 && (
                 <div className="h-full flex flex-col items-center justify-center text-slate-300 py-8">
                   <Clock className="h-8 w-8 mb-3 opacity-10" />
@@ -242,15 +242,15 @@ function QueueDisplayPage() {
                 <div className="pl-2.5 text-blue-500">
                   <Search className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 </div>
-                <Input 
+                <Input
                   value={searchPhone}
                   onChange={(e) => setSearchPhone(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="Tra cứu số thứ tự bằng SĐT..." 
+                  placeholder="Tra cứu số thứ tự bằng SĐT..."
                   className="h-9 md:h-12 w-full bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-[11px] md:text-sm shadow-none px-2"
                 />
                 <div className="pr-1.5">
-                  <Button 
+                  <Button
                     onClick={handleSearch}
                     disabled={isSearching || !searchPhone}
                     className="h-7 md:h-10 px-3 md:px-4 rounded-md md:rounded-lg bg-slate-900 hover:bg-slate-800 text-[10px] md:text-xs font-bold text-white transition-colors"
@@ -273,8 +273,8 @@ function QueueDisplayPage() {
               Chào mừng Công dân đến với QMS Smart Queue · Theo dõi màn hình để biết lượt phục vụ · Chúc Công dân một ngày tốt lành ·
             </div>
           </div>
-          <div className="hidden md:block pr-12 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap bg-slate-900 text-white px-6 py-2 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10 relative z-20">
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent animate-pulse">ANCS Dương Sơn Thân Tặng App</span>
+          <div className="hidden md:block pr-12 text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 whitespace-nowrap bg-[#f1f5f9] relative z-20">
+            ANCS Dương Sơn Thân Tặng App
           </div>
         </div>
       </footer>
@@ -284,7 +284,7 @@ function QueueDisplayPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="bg-gradient-primary p-8 text-white relative">
-              <button 
+              <button
                 onClick={() => setFoundTicket(null)}
                 className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
               >
@@ -317,7 +317,7 @@ function QueueDisplayPage() {
                   <Clock className="h-3 w-3" /> In lúc {new Date(foundTicket.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
-              
+
               <div className="space-y-3 text-left bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
                 <div className="flex justify-between items-center">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Họ và tên</span>
@@ -329,7 +329,7 @@ function QueueDisplayPage() {
                 </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={() => setFoundTicket(null)}
                 className="w-full mt-8 h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs tracking-widest uppercase shadow-lg shadow-slate-200"
               >
@@ -359,16 +359,16 @@ function CompactServingBar({ data }: { data: any }) {
       <div className="flex items-center gap-3 md:gap-8 flex-1 pl-2">
         <div className="flex flex-col">
           <div className="flex items-center gap-1.5 md:gap-3">
-             <div className="h-1.5 w-1.5 rounded-full bg-green-600 animate-pulse" />
-             <span className="text-[8px] md:text-xs font-black text-green-600 uppercase tracking-[0.15em] md:tracking-[0.3em]">Đang phục vụ</span>
+            <div className="h-1.5 w-1.5 rounded-full bg-green-600 animate-pulse" />
+            <span className="text-[8px] md:text-xs font-black text-green-600 uppercase tracking-[0.15em] md:tracking-[0.3em]">Đang phục vụ</span>
           </div>
           <h2 className="text-base md:text-3xl font-black text-slate-900 uppercase tracking-tight mt-0.5 leading-none">
             {data.name}
           </h2>
         </div>
-        
+
         <div className="h-6 w-[1px] bg-slate-100 hidden md:block mx-auto" />
-        
+
         <div className="flex flex-col ml-auto text-right">
           <span className="text-[7px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">SĐT</span>
           <div className="text-sm md:text-2xl font-black text-slate-600 tabular-nums leading-none">
@@ -386,7 +386,7 @@ function HeroCard({ data }: { data: any }) {
       {/* Decorative Blob */}
       <div className="absolute -top-12 -right-12 w-32 h-32 bg-red-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
       <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-red-50 rounded-full blur-3xl opacity-60 pointer-events-none" />
-      
+
       <div className="relative z-10 flex flex-col items-center w-full gap-2 lg:gap-2 xl:gap-3">
         {/* Name */}
         <h2 className="text-3xl md:text-6xl lg:text-[clamp(2rem,4vw,4rem)] xl:text-[clamp(2.5rem,5vw,5rem)] leading-none font-black tracking-tighter text-slate-900 uppercase break-words w-full">
@@ -395,21 +395,21 @@ function HeroCard({ data }: { data: any }) {
 
         {/* Info Row - stack vertically on small mobile, row on md+ */}
         <div className="flex flex-row items-center justify-center gap-2 md:gap-8 lg:gap-6 w-full">
-           <div className="flex flex-col items-center">
-             <span className="text-[7px] md:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">SĐT</span>
-             <div className="text-xl md:text-4xl lg:text-[clamp(1.25rem,2.5vw,2.5rem)] font-black text-slate-900 tracking-tight tabular-nums">
-                {data.maskedPhone}
-             </div>
-           </div>
+          <div className="flex flex-col items-center">
+            <span className="text-[7px] md:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">SĐT</span>
+            <div className="text-xl md:text-4xl lg:text-[clamp(1.25rem,2.5vw,2.5rem)] font-black text-slate-900 tracking-tight tabular-nums">
+              {data.maskedPhone}
+            </div>
+          </div>
 
-           <div className="h-8 w-[1px] bg-slate-100" />
+          <div className="h-8 w-[1px] bg-slate-100" />
 
-           <div className="flex flex-col items-center">
-             <span className="text-[7px] md:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Dự kiến</span>
-             <div className="px-2.5 py-1 md:px-5 md:py-2 lg:px-3 lg:py-1.5 rounded-lg md:rounded-xl bg-red-50 border border-red-100 text-red-600 text-lg md:text-3xl lg:text-[clamp(1rem,2vw,2rem)] font-black tabular-nums flex items-center gap-1.5 shadow-sm">
-                <Clock className="h-4 w-4 md:h-6 md:w-6 lg:h-[1em] lg:w-[1em]" /> {data.estimatedTime}
-             </div>
-           </div>
+          <div className="flex flex-col items-center">
+            <span className="text-[7px] md:text-[9px] lg:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Dự kiến</span>
+            <div className="px-2.5 py-1 md:px-5 md:py-2 lg:px-3 lg:py-1.5 rounded-lg md:rounded-xl bg-red-50 border border-red-100 text-red-600 text-lg md:text-3xl lg:text-[clamp(1rem,2vw,2rem)] font-black tabular-nums flex items-center gap-1.5 shadow-sm">
+              <Clock className="h-4 w-4 md:h-6 md:w-6 lg:h-[1em] lg:w-[1em]" /> {data.estimatedTime}
+            </div>
+          </div>
         </div>
 
         {/* Ticket - THE BIG NUMBER */}
