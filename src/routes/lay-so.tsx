@@ -86,6 +86,18 @@ function LaySoPage() {
               </p>
             </div>
 
+            {/* Lưu ý quan trọng */}
+            <div className="mt-6 space-y-3">
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
+                <div className="h-5 w-5 rounded-full bg-amber-500 flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold">!</div>
+                <div className="text-[11px] leading-relaxed text-amber-800 font-medium">
+                  <span className="font-black uppercase block mb-1">Lưu ý quan trọng:</span>
+                  • <span className="font-bold">Dưới 14 tuổi:</span> Cha mẹ cần mang theo giấy khai sinh và tài khoản VNeID đã định danh mức độ 2.<br/>
+                  • <span className="font-bold">Trên 14 tuổi:</span> Công dân cần mang theo 1 sim điện thoại chính chủ.
+                </div>
+              </div>
+            </div>
+
             <div className="mt-8 space-y-5">
               <Field
                 label="Họ và tên"
