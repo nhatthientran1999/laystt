@@ -5,8 +5,7 @@ import { supabase } from "./supabase";
  * Hàm lấy số thứ tự mới
  */
 export const createTicket = createServerFn({ method: "POST" })
-  .validator((data: { name: string; phone: string; service: string }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: { name: string; phone: string; service: string } }) => {
     const { count } = await supabase
       .from("queues")
       .select("*", { count: "exact", head: true });
@@ -34,8 +33,7 @@ export const createTicket = createServerFn({ method: "POST" })
  * Hàm gọi số tiếp theo
  */
 export const callNextTicket = createServerFn({ method: "POST" })
-  .validator((data: { counterId: number }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: { counterId: number } }) => {
     const { data: nextTicket, error: fetchError } = await supabase
       .from("queues")
       .select("*")
@@ -58,8 +56,7 @@ export const callNextTicket = createServerFn({ method: "POST" })
  * Hàm bỏ qua số hiện tại
  */
 export const skipTicket = createServerFn({ method: "POST" })
-  .validator((data: { ticketId: string }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: { ticketId: string } }) => {
     await supabase
       .from("queues")
       .update({ status: "skipped" })
