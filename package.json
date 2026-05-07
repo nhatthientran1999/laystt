@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'public', {recursive: true})\"",
-    "build:dev": "vite build --mode development && node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'public', {recursive: true})\"",
+    "build": "vite build && node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'public', {recursive: true}); if(fs.existsSync('dist/server')) fs.cpSync('dist/server', 'api', {recursive: true})\"",
+    "build:dev": "vite build --mode development && node -e \"const fs=require('fs'); if(fs.existsSync('dist/client')) fs.cpSync('dist/client', 'public', {recursive: true}); if(fs.existsSync('dist/server')) fs.cpSync('dist/server', 'api', {recursive: true})\"",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
