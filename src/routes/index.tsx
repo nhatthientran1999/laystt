@@ -8,8 +8,8 @@ import { ArrowRight, Clock, Calendar, UserCheck, Users, ShieldCheck, Hourglass, 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Màn hình hiển thị — QMS Smart Queue" },
-      { name: "description", content: "Màn hình hiển thị danh sách số thứ tự, tối ưu cho TV sảnh." },
+      { title: "App xếp hàng — Smart Queue" },
+      { name: "description", content: "ANCS Dương Sơn Thân Tặng App" },
     ],
   }),
   component: QueueDisplayPage,
@@ -81,7 +81,7 @@ function QueueDisplayPage() {
           <div className="flex items-center gap-4 md:gap-6">
             <Logo size={35} className="md:w-[45px]" />
             <div className="flex flex-col">
-              <h1 className="text-sm md:text-lg font-black tracking-tight uppercase text-primary leading-none">Hệ thống điều phối</h1>
+              <h1 className="text-sm md:text-lg font-black tracking-tight uppercase text-primary leading-none">App xếp hàng</h1>
               <p className="text-[7px] md:text-[8px] font-bold text-slate-400 tracking-[0.4em] uppercase mt-1">Smart Queue</p>
             </div>
           </div>
@@ -197,7 +197,7 @@ function QueueDisplayPage() {
             </div>
           </div>
           <div className="hidden md:block pr-12 text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 whitespace-nowrap bg-[#f1f5f9] relative z-20">
-            code by ancs dương sơn
+            ANCS Dương Sơn Thân Tặng App
           </div>
         </div>
       </footer>
