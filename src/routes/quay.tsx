@@ -125,7 +125,13 @@ function QuayPage() {
     name: h.customer_name,
     phone: h.phone_number,
     status: h.status,
-    completedAt: new Date(h.updated_at || h.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    completedAt: new Date(h.updated_at || h.created_at).toLocaleString('vi-VN', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })
   }));
 
   return (
