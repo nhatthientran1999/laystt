@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && node -e \"const fs=require('fs'); if(fs.existsSync('public')) fs.rmSync('public', {recursive:true}); if(fs.existsSync('api')) fs.rmSync('api', {recursive:true}); fs.mkdirSync('public/assets', {recursive:true}); fs.mkdirSync('api', {recursive:true}); if(fs.existsSync('dist/client/assets')) fs.cpSync('dist/client/assets', 'public/assets', {recursive:true}); if(fs.existsSync('dist/client/index.html')) fs.copyFileSync('dist/client/index.html', 'public/index.html'); if(fs.existsSync('dist/server/index.js')) fs.copyFileSync('dist/server/index.js', 'api/index.js');\"",
+    "build": "vite build && node -e \"const fs=require('fs'); if(fs.existsSync('public')) fs.rmSync('public', {recursive:true}); fs.mkdirSync('public/assets', {recursive:true}); if(!fs.existsSync('api')) fs.mkdirSync('api'); if(fs.existsSync('dist/client/assets')) fs.cpSync('dist/client/assets', 'public/assets', {recursive:true}); if(fs.existsSync('dist/client/index.html')) fs.copyFileSync('dist/client/index.html', 'public/index.html');\"",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
