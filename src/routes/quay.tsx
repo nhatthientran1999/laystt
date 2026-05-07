@@ -450,7 +450,7 @@ function HistoryTable({ history, onRecall, loading }: any) {
             <thead>
               <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-50">
                 <th className="px-6 py-5">STT</th>
-                <th className="px-6 py-5">Khách hàng</th>
+                <th className="px-6 py-5">Công dân</th>
                 <th className="px-6 py-5">Trạng thái</th>
                 <th className="px-6 py-5">Thời gian</th>
                 <th className="px-6 py-5 text-right">Hành động</th>

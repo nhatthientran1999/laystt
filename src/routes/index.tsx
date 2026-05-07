@@ -162,7 +162,7 @@ function QueueDisplayPage() {
              <CompactServingBar data={processedQueue.find((i: any) => i.status === 'serving') || processedQueue[0]} />
            ) : (
              <div className="bg-white/50 border-2 border-dashed border-slate-200 rounded-xl p-3 text-center text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-               Hiện không có khách hàng đang phục vụ
+               Hiện không có công dân đang phục vụ
              </div>
            )}
         </div>
@@ -270,11 +270,11 @@ function QueueDisplayPage() {
           <div className="pl-4 md:pl-12 text-[10px] md:text-xs font-black uppercase tracking-[0.2em] md:tracking-[0.4em] text-primary whitespace-nowrap bg-[#f1f5f9] relative z-20">Thông báo</div>
           <div className="relative flex-1 overflow-hidden">
             <div className="animate-marquee whitespace-nowrap text-sm md:text-lg font-bold text-slate-400 tracking-tight">
-              Chào mừng Quý khách đến với QMS Smart Queue · Theo dõi màn hình để biết lượt phục vụ · Chúc Quý khách một ngày tốt lành ·
+              Chào mừng Công dân đến với QMS Smart Queue · Theo dõi màn hình để biết lượt phục vụ · Chúc Công dân một ngày tốt lành ·
             </div>
           </div>
-          <div className="hidden md:block pr-12 text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 whitespace-nowrap bg-[#f1f5f9] relative z-20">
-            ANCS Dương Sơn Thân Tặng App
+          <div className="hidden md:block pr-12 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap bg-slate-900 text-white px-6 py-2 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.1)] border border-white/10 relative z-20">
+            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent animate-pulse">ANCS Dương Sơn Thân Tặng App</span>
           </div>
         </div>
       </footer>
