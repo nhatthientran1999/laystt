@@ -32,13 +32,6 @@ function QuayPage() {
     runGracePeriodCleanup({ data: undefined }).catch(console.error);
   }, []);
 
-  // Tự động làm mới dữ liệu mỗi 15 giây
-  useEffect(() => {
-    const timer = setInterval(() => {
-      window.location.reload();
-    }, 15000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Người đang IN_PROGRESS (serving)
   const servingItem = initialQueue.find((i: any) => i.status === 'serving');
