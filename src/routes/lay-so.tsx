@@ -61,13 +61,13 @@ function LaySoPage() {
               try {
                 const res = await createTicket({ data: { name, phone, service } });
                 setTicketData(res);
-                
+
                 // Lấy danh sách hàng chờ hiện tại để tính toán
                 const queueData = await getQueue();
                 setQueueDataRaw(queueData);
                 const pos = queueData ? (queueData as any[]).filter(i => i.status === 'waiting').length : 0;
                 setQueuePos(pos);
-                
+
                 setSubmitted(true);
               } catch (err) {
                 alert("Lỗi khi lấy số: " + (err as Error).message);
@@ -85,7 +85,7 @@ function LaySoPage() {
                 Nhanh chóng – Tiện lợi – Văn minh
               </p>
             </div>
-            
+
             <div className="mt-8 space-y-5">
               <Field
                 label="Họ và tên"
@@ -112,11 +112,10 @@ function LaySoPage() {
                     key={s}
                     type="button"
                     onClick={() => setService(s)}
-                    className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden group ${
-                      service === s 
-                        ? "border-primary bg-primary/[0.03] text-primary shadow-sm" 
+                    className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden group ${service === s
+                        ? "border-primary bg-primary/[0.03] text-primary shadow-sm"
                         : "border-slate-100 bg-slate-50/50 text-slate-600 hover:border-primary/20"
-                    }`}
+                      }`}
                   >
                     <div className="relative z-10 font-bold text-sm leading-tight pr-6">{s}</div>
                     {service === s && (
@@ -139,7 +138,7 @@ function LaySoPage() {
         ) : (
           <div className="bg-card shadow-elegant rounded-[2.5rem] border border-border p-8 text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-primary"></div>
-            
+
             <div className="flex items-center gap-3 border-b border-border pb-4 md:pb-5">
               <Logo size={28} subtitle="Smart Queue" className="md:w-[32px]" />
               <span className="ml-auto text-[10px] font-semibold uppercase tracking-wider text-success">

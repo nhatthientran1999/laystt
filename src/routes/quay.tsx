@@ -55,6 +55,8 @@ function QuayPage() {
     setLoading(true);
     try {
       await completeTicket({ data: { ticketId: servingItem.id, counterId: 1 } });
+      // Tự động gọi người tiếp theo sau khi xong
+      await callNextTicket({ data: { counterId: 1 } });
       window.location.reload();
     } catch (err) {
       alert("Lỗi khi hoàn tất: " + (err as Error).message);
@@ -264,42 +266,38 @@ function ServingCard({ current, onNext, onComplete, onSkip, loading, servingItem
         </div>
       </div>
       
-      <div className="grid grid-cols-3 lg:flex lg:flex-col gap-3 md:gap-4 mt-2 lg:mt-0">
-        {/* Hoàn tất */}
-        <div className="flex flex-col items-center justify-center">
-          <ActionButton
-            onClick={onComplete}
-            className="bg-emerald-600 text-white hover:bg-emerald-500"
-            label="XONG"
-            sub="Hoàn tất"
-            icon={<CheckCircle className="h-6 w-6 md:h-10 md:w-10" />}
-            disabled={loading || !servingItem}
-          />
-        </div>
-
-        {/* Gọi tiếp */}
-        <div className="flex flex-col items-center justify-center">
+      <div className="flex lg:flex-col items-center justify-center gap-3 md:gap-4 mt-2 lg:mt-0">
+        {!servingItem ? (
+          /* Nếu quầy trống, chỉ hiện nút Gọi tiếp */
           <ActionButton
             onClick={onNext}
-            className="bg-slate-900 text-white hover:bg-primary"
-            label="GỌI TIẾP"
-            sub="Kế tiếp"
+            className="bg-slate-900 text-white hover:bg-primary h-24 w-full md:h-44 md:w-44"
+            label="BẮT ĐẦU GỌI"
+            sub="Gọi số đầu tiên"
             icon={<ChevronRight className="h-6 w-6 md:h-10 md:w-10" />}
             disabled={loading}
           />
-        </div>
-
-        {/* Bỏ qua */}
-        <div className="flex flex-col items-center justify-center">
-          <ActionButton
-            onClick={onSkip}
-            className="bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-100"
-            label="BỎ QUA"
-            sub="Vắng mặt"
-            icon={<SkipForward className="h-6 w-6 md:h-10 md:w-10" />}
-            disabled={loading || !servingItem}
-          />
-        </div>
+        ) : (
+          /* Nếu đang phục vụ, hiện nút Xong và Bỏ qua */
+          <>
+            <ActionButton
+              onClick={onComplete}
+              className="bg-emerald-600 text-white hover:bg-emerald-500"
+              label="XONG"
+              sub="Tiếp theo"
+              icon={<CheckCircle className="h-6 w-6 md:h-10 md:w-10" />}
+              disabled={loading}
+            />
+            <ActionButton
+              onClick={onSkip}
+              className="bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-100"
+              label="BỎ QUA"
+              sub="Vắng mặt"
+              icon={<SkipForward className="h-6 w-6 md:h-10 md:w-10" />}
+              disabled={loading}
+            />
+          </>
+        )}
       </div>
     </div>
   );
