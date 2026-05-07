@@ -7,7 +7,6 @@ import { supabase } from "./supabase";
 export const createTicket = createServerFn({ method: "POST" })
   .validator((data: { name: string; phone: string; service: string }) => data)
   .handler(async ({ data }) => {
-    // 1. Lấy số lượng phiếu hiện có để tính số tiếp theo (Đơn giản cho bản demo)
     const { count } = await supabase
       .from("queues")
       .select("*", { count: "exact", head: true });
@@ -15,7 +14,6 @@ export const createTicket = createServerFn({ method: "POST" })
     const nextNumber = (count || 0) + 101;
     const displayNumber = `A${nextNumber}`;
 
-    // 2. Chèn vào bảng queues
     const { data: ticket, error } = await supabase
       .from("queues")
       .insert({
@@ -28,11 +26,7 @@ export const createTicket = createServerFn({ method: "POST" })
       .select()
       .single();
 
-    if (error) {
-      console.error("Error creating ticket:", error);
-      throw new Error(error.message);
-    }
-
+    if (error) throw new Error(error.message);
     return ticket;
   });
 
@@ -40,8 +34,8 @@ export const createTicket = createServerFn({ method: "POST" })
  * Hàm gọi số tiếp theo
  */
 export const callNextTicket = createServerFn({ method: "POST" })
-  .handler(async () => {
-    // 1. Tìm số đang chờ tiếp theo
+  .validator((data: { counterId: number }) => data)
+  .handler(async ({ data }) => {
     const { data: nextTicket, error: fetchError } = await supabase
       .from("queues")
       .select("*")
@@ -52,10 +46,9 @@ export const callNextTicket = createServerFn({ method: "POST" })
 
     if (fetchError || !nextTicket) return null;
 
-    // 2. Cập nhật trạng thái số đó thành 'serving'
     await supabase
       .from("queues")
-      .update({ status: "serving" })
+      .update({ status: "serving", counter_number: data.counterId })
       .eq("id", nextTicket.id);
 
     return nextTicket;
